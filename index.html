@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Bacly Admin</title>
+  <meta name="description" content="Déposer des sujets du BAC de partout ; le PC les classe et les publie dans Bacly.">
+  <meta name="theme-color" content="#061417">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <svg id="fond" aria-hidden="true"></svg>
+  <main id="app" aria-live="polite"></main>
+  <nav id="nav" hidden></nav>
+  <div id="feuille" hidden></div>
+  <div id="toast" role="status" hidden></div>
+  <input type="file" id="choixFichiers" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" multiple hidden>
+  <input type="file" id="choixPhoto" accept="image/*" capture="environment" hidden>
+  <input type="file" id="choixGalerie" accept="image/*" multiple hidden>
+  <script src="config.js"></script>
+  <script src="js/icones.js"></script>
+  <script src="vendor/pdf-lib.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
