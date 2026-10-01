@@ -1,5 +1,5 @@
 // Service worker de Bacly Admin : l'app s'ouvre même sans réseau, et reçoit les fichiers « partagés » depuis WhatsApp, Fichiers…
-const VERSION = 'bacly-admin-v1';
+const VERSION = 'bacly-admin-v3';
 const COQUILLE = [
   './', './index.html', './config.js', './manifest.webmanifest', './css/app.css', './js/app.js', './js/icones.js',
   './vendor/pdf-lib.min.js', './vendor/instrument-serif.ttf', './vendor/ionicons.ttf',

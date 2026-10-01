@@ -36,13 +36,23 @@ async function appel(chemin, { methode = 'GET', corps, entetes = {}, auth = true
   if (!r.ok) {
     const msg = j?.msg || j?.message || j?.error_description || j?.error || texte || `Erreur ${r.status}`;
     if (r.status === 401 && auth) { deconnecter('Session expirée : reconnecte-toi.'); }
-    throw new ErreurApi(String(msg).slice(0, 200), r.status);
+    const err = new ErreurApi(String(msg).slice(0, 200), r.status);
+    err.code = j?.error_code || j?.code; throw err;
   }
   return j;
 }
 async function seConnecter(email, mdp) {
   const j = await appel('/auth/v1/token?grant_type=password', { methode: 'POST', corps: { email, password: mdp }, auth: false })
-    .catch((e) => { throw new ErreurApi(e.statut === 400 ? 'E-mail ou mot de passe incorrect.' : e.message, e.statut); });
+    .catch((e) => {
+      const m = `${e.code ?? ''} ${e.message}`;
+      const texte = /email_not_confirmed|not confirmed/i.test(m) ? "Ton compte n'est pas confirmé : dans Supabase → Authentication → Users, ouvre ton compte et confirme-le (ou recrée-le en cochant « Auto Confirm User »)."
+        : /invalid_credentials|invalid login/i.test(m) ? "E-mail ou mot de passe incorrect. Vérifie que ce compte existe dans Supabase → Authentication → Users (et que Chrome n'a pas pré-rempli un autre mot de passe)."
+        : /invalid api key|no api key|apikey/i.test(m) ? 'Clé publique refusée : vérifie la clé dans config.js (Supabase → Project Settings → API Keys → publishable).'
+        : /signups? not allowed|disabled/i.test(m) ? 'Connexion par e-mail désactivée : Supabase → Authentication → Sign In / Providers → active « Email ».'
+        : e.statut === 0 ? "Impossible de joindre Supabase : vérifie Internet. Si le projet est en pause, ouvre supabase.com et clique sur « Restore »."
+        : `Connexion refusée (${e.statut}) : ${e.message}`;
+      throw new ErreurApi(texte, e.statut);
+    });
   garderSession(j);
 }
 function garderSession(j) {
@@ -336,6 +346,7 @@ function vueDeposer() {
     <div class="rond">${ic('cloud-upload-outline', 28, 'color:var(--primary)')}</div>
     <div class="serif" style="font-size:24px;margin-top:10px">Ajoute tes sujets</div><div class="small" style="margin-top:4px">PDF, JPG ou PNG · 50 Mo max par fichier</div>
     <div class="row" style="gap:10px;margin-top:16px"><button class="btn p" style="flex:1;min-height:46px;font-size:14px" data-a="choisir">${ic('document-text-outline', 18)} Choisir des PDF</button><button class="btn" style="flex:1;min-height:46px;font-size:14px" data-a="photographier">${ic('camera-outline', 18)} Photographier</button></div>
+    <button class="small" style="margin-top:12px;text-decoration:underline;color:var(--accent)" data-a="choisirTout">${ic('folder-open-outline', 14)} Autre fichier (PDF ou image déjà sur le téléphone)</button>
   </div>${blocClassement(E.choix)}`;
 }
 function vuePhotos() {
@@ -406,7 +417,7 @@ function vueReglages() {
   ${carteInstaller()}
   <div class="card"><div class="b" style="margin-bottom:6px">${ic('information-circle-outline', 18, 'color:var(--accent)')} Comment ça marche</div><div class="small" style="color:var(--text);line-height:1.6">1. Tu déposes un PDF ou des photos, d'où tu veux.<br>2. Le fichier attend en ligne, dans un casier privé.<br>3. Dès que le PC est allumé, il le récupère, le lit (OCR), le classe et le publie dans Bacly.<br>Astuce : depuis WhatsApp ou Fichiers, touche <b>Partager</b> → <b>Bacly Admin</b>.</div></div>
   <button class="btn d plein" data-a="deconnecter">${ic('log-out-outline')} Se déconnecter</button>
-  <div class="small" style="text-align:center">Bacly Admin · version 1.0</div>`;
+  <div class="small" style="text-align:center">Bacly Admin · version 1.1</div>`;
 }
 function nav() {
   const nb = E.demandes?.length || 0;
@@ -460,6 +471,7 @@ document.addEventListener('click', async (e) => {
     case 'cMatiere': E.choix.matiere = v === 'Automatique' ? null : v; if (!typesPour(E.choix.matiere).includes(E.choix.type)) E.choix.type = null; afficher(); break;
     case 'cType': E.choix.type = v === 'Automatique' ? null : v; afficher(); break;
     case 'choisir': $('#choixFichiers').click(); break;
+    case 'choisirTout': $('#choixTout').click(); break;
     case 'photographier': E.sousVue = 'photos'; afficher(); scrollTo(0, 0); if (!E.photos.length) $('#choixPhoto').click(); break;
     case 'photo': if (e.target.closest('[data-a="galerie"]')) break; $('#choixPhoto').click(); break;
     case 'galerie': e.stopPropagation(); $('#choixGalerie').click(); break;
@@ -515,6 +527,7 @@ document.addEventListener('submit', async (e) => {
   catch (err) { E.chargement = false; E.erreur = err.message; afficher(); }
 });
 $('#choixFichiers').onchange = (e) => { const f = [...e.target.files]; e.target.value = ''; if (f.length) deposer(f); };
+$('#choixTout').onchange = $('#choixFichiers').onchange;
 $('#choixPhoto').onchange = (e) => { const f = [...e.target.files]; e.target.value = ''; if (f.length) { E.sousVue = 'photos'; ajouterPhotos(f); } };
 $('#choixGalerie').onchange = $('#choixPhoto').onchange;
 // glisser-déposer (sur ordinateur)
